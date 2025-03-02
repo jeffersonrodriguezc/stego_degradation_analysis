@@ -169,3 +169,19 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Avoid to upload big data files
+data/raw/
+data/processed/
+data/metadata/
+models/saved_models/
+
+# Ignore temporal files
+__pycache__/
+*.log
+*.zip
+*.tar.gz
+
+# virtual env 
+venv/
+.env
