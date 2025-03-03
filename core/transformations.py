@@ -14,7 +14,7 @@ class Transformations:
     with a single image or a dataset (list of images). Each transformation is applied 
     independently to the original image(s); that is, transformations do not compound.
     
-    Supported (placeholder) transformations include:
+    Supported transformations include:
       - crop
       - resize
       - translation
