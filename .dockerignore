@@ -1,0 +1,33 @@
+# Ignorar archivos y carpetas de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+
+# ignore local envs
+venv/
+.env
+
+# ignore configs of vscode
+.vscode/
+.idea/
+
+# ignore temporal databases
+*.sqlite3
+
+# ignore logs
+logs/
+*.log
+*.out
+
+# ignore data folders
+data/raw/
+data/processed/
+output/
+test/
+
+# ignore models
+models/hide/
+models/reveal/
+models/classifier/

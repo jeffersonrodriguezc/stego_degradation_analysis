@@ -13,22 +13,6 @@ def load_test_image(image_path):
     assert image is not None, f"Error: no se pudo cargar la imagen desde {image_path}"
     return image
 
-def visualize_side_by_side(img1, img2, title1="Original", title2="Transformed"):
-    """
-    Muestra dos imágenes lado a lado usando matplotlib.
-    Se convierte la imagen de BGR (OpenCV) a RGB para visualización.
-    """
-    img1_rgb = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-    img2_rgb = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-    
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-    axs[0].imshow(img1_rgb)
-    axs[0].set_title(title1)
-    axs[0].axis("off")
-    axs[1].imshow(img2_rgb)
-    axs[1].set_title(title2)
-    axs[1].axis("off")
-    plt.show()
 
 def test_single_image_format_consistency():
     """
@@ -63,21 +47,3 @@ def test_multiple_images_parallel():
     assert isinstance(results, list), "La salida debe ser una lista de imágenes."
     for out_img in results:
         assert isinstance(out_img, np.ndarray), "Cada imagen de salida debe ser en formato OpenCV (numpy.ndarray)."
-
-def test_visualization_side_by_side():
-    """
-    Prueba auxiliar para visualizar la imagen original y la transformada lado a lado.
-    Esta prueba se ejecuta manualmente para inspeccionar visualmente el resultado.
-    """
-    image_path = os.path.join("datos", "test_image.jpg")
-    img = load_test_image(image_path)
-    
-    transformer = Transformations()
-    # Aplicamos una transformación de ejemplo (por ejemplo, brightness/contrast)
-    transformed = transformer.apply_brightness_contrast(img, alpha=0.8, beta=30)
-    
-    # Visualización side by side
-    visualize_side_by_side(img, transformed, "Original", "Brillo/Contraste Ajustados")
-    
-    # Finalizamos la prueba sin errores (solo visual)
-    assert True
