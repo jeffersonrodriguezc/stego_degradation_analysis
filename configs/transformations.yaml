@@ -1,0 +1,102 @@
+transformations:
+  - name: resize
+    variations:
+      - scale: 0.999
+      - scale: 0.975
+      - scale: 0.95
+      - scale: 0.90
+      - scale: 0.85
+      - scale: 0.75
+      - scale: 0.65
+      - scale: 0.5
+    titles:
+      - "scale 99.9%"
+      - "scale 97.5%"
+      - "scale 95%"
+      - "scale 90%"
+      - "scale 85%"
+      - "scale 75%"
+      - "scale 65%"
+      - "scale 50%"
+
+  - name: gaussian_noise
+    variations:
+      - { mean: 0, sigma: 2 }
+      - { mean: 0, sigma: 4 }
+      - { mean: 0, sigma: 6 }
+      - { mean: 0, sigma: 8 }
+      - { mean: 0, sigma: 10 }
+      - { mean: 0, sigma: 16}
+      - { mean: 0, sigma: 25 }
+      - { mean: 0, sigma: 32 }
+    titles:
+      - "Gaussian Noise: 0, 2"
+      - "Gaussian Noise: 0, 4"
+      - "Gaussian Noise: 0, 6"
+      - "Gaussian Noise: 0, 8"
+      - "Gaussian Noise: 0, 10"
+      - "Gaussian Noise: 0, 16"
+      - "Gaussian Noise: 0, 25"
+      - "Gaussian Noise: 0, 32"
+
+  - name: salt_pepper_noise
+    variations:
+      - { salt_prob: 0.01, pepper_prob: 0.3 }
+      - { salt_prob: 0.03, pepper_prob: 0.1 }
+      - { salt_prob: 0.1, pepper_prob: 0.03 }
+      - { salt_prob: 0.3, pepper_prob: 0.01 }
+      - { salt_prob: 0.01, pepper_prob: 0.01 }
+      - { salt_prob: 0.03, pepper_prob: 0.03 }
+      - { salt_prob: 0.1, pepper_prob: 0.1 }
+      - { salt_prob: 0.3, pepper_prob: 0.3 }
+    titles:
+      - "Salt Pepper Noise: 0.01, 0.3"
+      - "Salt Pepper Noise: 0.03, 0.1"
+      - "Salt Pepper Noise: 0.1, 0.03"
+      - "Salt Pepper Noise: 0.3, 0.01"
+      - "Salt Pepper Noise: 0.01, 0.01"
+      - "Salt Pepper Noise: 0.03, 0.03"
+      - "Salt Pepper Noise: 0.1, 0.1"
+      - "Salt Pepper Noise: 0.3, 0.3"
+
+  - name: compression
+    variations:
+      - { compression_type: "JPEG", quality: 100 }
+      - { compression_type: "JPEG", quality: 99 }
+      - { compression_type: "JPEG", quality: 90 }
+      - { compression_type: "JPEG", quality: 80 }
+      - { compression_type: "WebP", quality: 100 }
+      - { compression_type: "WebP", quality: 99 }
+      - { compression_type: "WebP", quality: 90 }
+      - { compression_type: "WebP", quality: 80 }
+    titles:
+      - "Compression: JPEG, 100"
+      - "Compression: JPEG, 99"
+      - "Compression: JPEG, 90"
+      - "Compression: JPEG, 80"
+      - "Compression: WebP, 100"
+      - "Compression: WebP, 99"
+      - "Compression: WebP, 90"
+      - "Compression: WebP, 80"
+
+  - name: sharpening
+    variations:
+      - { intensity: 0 }
+      - { intensity: 0.01 }
+      - { intensity: 0.1 }
+      - { intensity: 0.5 }
+    titles:
+      - "Sharpening: 0"
+      - "Sharpening: 0.01"
+      - "Sharpening: 0.1"
+      - "Sharpening: 0.5"
+
+  - name: gaussian_blur
+    variations:
+      - { ksize: 1 }
+      - { ksize: 3 }
+      - { ksize: 5 }
+    titles:
+      - "Gaussian Blurring: 1"
+      - "Gaussian Blurring: 3"
+      - "Gaussian Blurring: 5"

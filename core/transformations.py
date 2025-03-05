@@ -47,7 +47,7 @@ class Transformations:
             'gaussian_blur': self.apply_gaussian_blur,
             'compression': self.apply_compression,
             'warp': self.apply_simple_warp,
-            'sharpen': self.apply_sharpen,
+            'sharpening': self.apply_sharpen,
             'rotation': self.apply_rotation,
             'brightness_contrast': self.apply_brightness_contrast,
             'gamma_correction': self.apply_gamma_correction,
@@ -605,23 +605,61 @@ class Transformations:
     def apply_pipeline(self, image, pipeline):
         """
         Apply a sequence (pipeline) of transformations independently to the provided image or dataset.
-        
-        Each transformation in the pipeline is applied separately to the original image(s). 
-        That is, transformations are not compounded on top of each other.
 
-        :param image: A single image or a list of images.
-        :param pipeline: List of dictionaries, each with the format:
-                         {'name': <transformation_name>, 'params': {<parameters>}}
-                         Example:
-                         [
-                             {'name': 'crop', 'params': {'x': 0, 'y': 0, 'width': 100, 'height': 100}},
-                             {'name': 'resize', 'params': {'width': 50, 'height': 50}},
-                         ]
-        :return: Dictionary mapping each transformation name to its results (transformed image or list of images).
+        Each transformation is applied separately to the original image. Additionally, you can specify
+        multiple variations of the same transformation by using the "variations" key. If only a single set of 
+        parameters is needed, use the "params" key.
+
+        Parameters:
+        -----------
+        image : Image or list of images
+            The image or dataset of images to transform.
+        pipeline : list of dict
+            A list of dictionaries defining each transformation. Each dictionary should follow the format:
+                {
+                    'name': <transformation_name>,
+                    'params': {<parameters>}  # Or alternatively,
+                    'variations': [{<parameters1>}, {<parameters2>}, ...]
+                }
+            Example:
+                [
+                    {
+                        'name': 'crop',
+                        'variations': [
+                            {'x': 0, 'y': 0, 'width': 100, 'height': 100},
+                            {'x': 10, 'y': 10, 'width': 50, 'height': 50},
+                        ],
+                        'titles': ['Crop: Top-left', 'Crop: Center']
+                    },
+                    {
+                        'name': 'resize',
+                        'params': {'width': 50, 'height': 50},
+                        'titles': ['resize 50']
+                    }
+                ]
+
+        Returns:
+        --------
+        dict
+            A dictionary mapping each transformation name to its resulting transformed image(s).
+            If multiple variations are provided for a transformation, the value will be a list.
         """
         results = {}
+
         for step in pipeline:
             transformation_name = step.get('name')
-            params = step.get('params', {})
-            results[transformation_name] = self.apply_transformation(image, transformation_name, **params)
+            # Check if multiple parameter variations are provided
+            if 'variations' in step:
+                variations = step['variations']
+                transformed_images = []
+                for params in variations:
+                    # Apply the transformation to the original image with each set of parameters
+                    transformed = self.apply_transformation(image, transformation_name, **params)
+                    transformed_images.append(transformed)
+                results[transformation_name] = transformed_images
+            else:
+                # Use a single set of parameters provided under the 'params' key
+                params = step.get('params', {})
+                results[transformation_name] = self.apply_transformation(image, transformation_name, **params)
+
         return results
