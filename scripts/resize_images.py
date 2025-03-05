@@ -6,7 +6,7 @@ import numpy as np
 
 # Definir rutas
 RAW_DIR = "data/raw/CFD_Dataset/CFD_Version_3_0/images/CFD"
-PROCESSED_DIR = "data/processed/CFD"
+PROCESSED_DIR = "data/processed/CFD/CFD_original"
 
 # Asegurar que la carpeta de salida exista
 os.makedirs(PROCESSED_DIR, exist_ok=True)

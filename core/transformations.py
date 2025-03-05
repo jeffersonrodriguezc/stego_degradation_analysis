@@ -45,6 +45,7 @@ class Transformations:
             'flip': self.apply_flip,
             'salt_pepper_noise': self.apply_salt_pepper_noise,
             'gaussian_blur': self.apply_gaussian_blur,
+            'median_blur': self.apply_median_blur,
             'compression': self.apply_compression,
             'warp': self.apply_simple_warp,
             'sharpening': self.apply_sharpen,
@@ -449,6 +450,33 @@ class Transformations:
 
         # Apply the Gaussian blur using OpenCV
         blurred = cv2.GaussianBlur(image, (ksize, ksize), 0)
+        
+        return blurred
+    
+    def apply_median_blur(self, image, **kwargs):
+        """
+        Apply median blur to an image.
+        
+        Expected kwargs:
+        - ksize: Kernel size for the blur operation (default: 3). 
+                Note: ksize must be an odd number.
+        
+        This operation applies a median blur filter, which replaces each pixel's value 
+        with the median of the neighboring pixels defined by the kernel size. 
+        It is especially effective in reducing salt-and-pepper noise while preserving edges.
+        
+        :param image: Original image.
+        :return: Blurred image.
+        """
+        # Retrieve the kernel size parameter with a default value of 3    
+        ksize = kwargs.get("ksize", 3)
+        
+        # Ensure ksize is odd; if it's even, increment by 1.
+        if ksize % 2 == 0:
+            ksize += 1
+        
+        # Apply the median blur using OpenCV
+        blurred = cv2.medianBlur(image, ksize)
         
         return blurred
 

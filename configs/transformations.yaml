@@ -82,21 +82,43 @@ transformations:
   - name: sharpening
     variations:
       - { intensity: 0 }
+      - { intensity: 0.001 }
       - { intensity: 0.01 }
+      - { intensity: 0.05 }
       - { intensity: 0.1 }
       - { intensity: 0.5 }
+      - { intensity: 0.75 }
+      - { intensity: 1}
     titles:
       - "Sharpening: 0"
+      - "Sharpening: 0.001"
       - "Sharpening: 0.01"
+      - "Sharpening: 0.05"
       - "Sharpening: 0.1"
       - "Sharpening: 0.5"
+      - "Sharpening: 0.75"
+      - "Sharpening: 1"
 
   - name: gaussian_blur
     variations:
-      - { ksize: 1 }
       - { ksize: 3 }
       - { ksize: 5 }
+      - { ksize: 7 }
+      - { ksize: 9 }
     titles:
-      - "Gaussian Blurring: 1"
       - "Gaussian Blurring: 3"
       - "Gaussian Blurring: 5"
+      - "Gaussian Blurring: 7"
+      - "Gaussian Blurring: 9"
+
+  - name: median_blur
+    variations:
+      - { ksize: 3 }
+      - { ksize: 5 }
+      - { ksize: 7 }
+      - { ksize: 9 }
+    titles:
+      - "Median Blurring: 3"
+      - "Median Blurring: 5"
+      - "Median Blurring: 7"
+      - "Median Blurring: 9"
