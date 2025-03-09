@@ -1,53 +1,66 @@
 import gc
 import numpy as np
+from typing import Optional, Callable, Dict
 
 class StegoModel:
     """
-    A versatile and framework-agnostic model loader for performing steganography operations.
-
-    This class enables loading pre-trained models from either TensorFlow or PyTorch frameworks,
-    supporting both hiding (embedding) a secret image into cover images and revealing (extracting)
-    secret images from stego images. It supports batch processing for efficient computation.
+    StegoModel is a class that enables hiding and revealing secret images 
+    using pre-trained deep learning models. It supports different frameworks 
+    and allows for custom preprocessing and postprocessing functions.
 
     Attributes:
-        framework (str): The deep learning framework used ('tensorflow' or 'pytorch').
-        device (str): Computation device, e.g., 'cpu' or 'cuda'.
-        model: Loaded deep learning model.
-        custom_objects: Custom objects to load the model (only for TensorFlow).
-        post_process_hide_func (callable, optional): Optional post-processing function to apply
-            to the raw output of the hide method.
-
-    Args:
-        model_path (str): Path to the pre-trained model file.
-        framework (str): Framework of the model ('tensorflow' or 'pytorch'). Default is 'tensorflow'.
-        device (str): Device to load and execute the model. Default is 'cpu'.
-        custom_objects: Custom objects to load the model (only for TensorFlow).
+        model_path_hide (str): Path to the pre-trained model used for hiding an image.
+        model_path_reveal (str): Path to the pre-trained model used for revealing a hidden image.
+        framework (str): The deep learning framework used (e.g., TensorFlow, PyTorch).
+        device (str): The device where the model will run ('cpu' or 'cuda'). Default is 'cpu'.
+        custom_objects (Optional[Dict]): Dictionary of custom objects required by the model (if any).
+        objective (str): Defines the initial objective of the model. 
+                         Options: 'hide' (default), 'reveal', or 'both'.
+        post_process_hide_func (Optional[Callable]): A function to apply post-processing 
+                                                     to the output of the hiding model.
+        pre_process_reveal_func (Optional[Callable]): A function to apply pre-processing 
+                                                      before passing the image to the reveal model.
+        model (object): The currently loaded model (either hide or reveal).
+        model_loaded (str): Specifies which model is currently loaded ('hide' or 'reveal').
     """
     def __init__(self, 
-                model_path:str,
-                framework:str, 
-                device:str='cpu',
-                custom_objects=None,
-                post_process_hide_func=None):
+                 model_path_hide: str,
+                 model_path_reveal: str,
+                 framework: str, 
+                 device: str = 'cpu',
+                 custom_objects: Optional[Dict] = None,
+                 objective: str = 'hide',
+                 post_process_hide_func: Optional[Callable] = None,
+                 pre_process_reveal_func: Optional[Callable] = None):
         
-        self.model_path = model_path
+        self.objetive = objective
         self.device = device
         self.framework = framework
         self.custom_objects = custom_objects
-        self.model = self.load_model()
+        self.model_path_hide = model_path_hide
+        self.model_path_reveal = model_path_reveal
         self.post_process_hide_func = post_process_hide_func
+        self.pre_process_reveal_func = pre_process_reveal_func
+        if self.objetive == 'both' or self.objetive == 'hide':
+            # First load the hide model
+            self.model = self.load_model(self.model_path_hide)
+            self.model_loaded = 'hide'
+        else:
+            # Load reveal model
+            self.model = self.load_model(self.model_path_reveal)
+            self.model_loaded = 'reveal'
     
-    def load_model(self):
+    def load_model(self, model_path):
         # load the model
         if self.framework == 'tensorflow':
             import tensorflow as tf
-            model = tf.keras.models.load_model(self.model_path, 
+            model = tf.keras.models.load_model(model_path, 
                                                custom_objects=self.custom_objects)
             
             return model
         elif self.framework == 'pytorch':
             import torch
-            model = torch.load(self.model_path, map_location=self.device)
+            model = torch.load(model_path, map_location=self.device)
             model.eval()
 
             return model
@@ -67,6 +80,11 @@ class StegoModel:
         Returns:
             np.ndarray: Stego images containing the secret images.
         """
+        if self.model_loaded == 'reveal':
+            self.gpu_memory_reset()
+            self.model = self.load_model(self.model_path_hide)
+            self.model_loaded = 'hide'
+        
         num_images = len(cover_images)
         cover_images = np.array(cover_images)
         secrets = np.tile(secret, (num_images, 1, 1, 1))
@@ -97,25 +115,41 @@ class StegoModel:
         else:
             return {"stego_images": stegos}
     
-    def reveal(self, stego_images, batch_size=8):
+    def reveal(self, stego_dict, batch_size=8):
         """
         Reveals a secret image from stego images using the pre-trained model."
         """
-        num_images = len(stego_images)
+        if self.model_loaded == 'hide':
+            self.gpu_memory_reset()
+            self.model = self.load_model(self.model_path_reveal)
+            self.model_loaded = 'reveal'
+
+        # if a pre-processing function was provided, apply it.
+        if self.pre_process_reveal_func is not None:
+            pre_processed_stegos = self.pre_process_reveal_func(stego_dict)
+
+        num_images = len(pre_processed_stegos)
+        
         batch_padding = (batch_size - (num_images % batch_size)) % batch_size
         if batch_padding > 0:
-            filler = np.zeros((batch_padding,) + stego_images.shape[1:], dtype=stego_images.dtype)
-            stego_images = np.concatenate((stego_images, filler), axis=0)
+            filler = np.zeros((batch_padding,) + pre_processed_stegos.shape[1:], 
+                              dtype=pre_processed_stegos.dtype)
+            pre_processed_stegos = np.concatenate((pre_processed_stegos, filler), 
+                                                  axis=0)
 
         if self.framework == 'tensorflow':
-            secrets = self.model.predict(stego_images, batch_size=batch_size, verbose=True)
+            secrets = self.model.predict(pre_processed_stegos, batch_size=batch_size, 
+                                         verbose=True)
         elif self.framework == 'pytorch':
             with torch.no_grad():
-                stegos_torch = torch.from_numpy(stego_images).to(self.device)
+                stegos_torch = torch.from_numpy(pre_processed_stegos).to(self.device)
                 secrets = self.model(input=stegos_torch)
                 secrets = secrets.cpu().numpy()
 
-        return secrets[:num_images]
+        # You may clip the values to be able to use the result as an image 
+        norm_recovered_secret_arr = np.clip(secrets[:num_images], 0 , 1)
+        
+        return {"secret_images": norm_recovered_secret_arr}
     
     def gpu_memory_reset(self):
         """

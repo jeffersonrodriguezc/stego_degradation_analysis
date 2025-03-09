@@ -46,7 +46,13 @@ def get_IDWT_TF(scale):
 	)
 
 	return IDWT_net
-def get_DWT_TF(tensor, scale):
+def get_DWT_TF(scale):
+	"""
+	Returns a model that performs the Discrete Wavelet Transform (DWT) of an image."""
+	# Define the input tensor
+	tensor = tf.keras.layers.Input(shape = (int(scale), int(scale), 3), 
+								dtype='float64', batch_size = 1)
+
 	# Compute the DWT of each of the channels of an RGB image.
 	scope_name = 'DWT'
 	dwt_0 = DWT.DWT(name=scope_name + "0",concat=0)(tf.reshape(tensor[:,:,:,0], (1, scale, scale, 1)))
@@ -74,7 +80,7 @@ def get_steguz_loss(y_true, y_pred):
 
 	return -1*gain
 
-# post processing functions ############################################
+# Custom post processing hide functions ################################
 # 1) Post-processing function used for the Steguz model.
 def post_process_hide_func_steguz(stego_images, scale):
     """
@@ -111,3 +117,32 @@ def post_process_hide_func_steguz(stego_images, scale):
     return {"stego_images": stego_images_full_resolution,
 			 "min_values": min_values, 
 			 "max_values": max_values}
+
+# Custom Pre-processing reveal functions ###############################
+# 1) Pre-processing reveal function used for the Steguz model.
+def pre_process_reveal_func_steguz(stego_dict, scale):
+	"""
+	Pre-process the stego images before revealing the secret image using the Steguz model.
+	Args:
+		stego_images (np.ndarray): Stego images to reveal the secret image from.
+		scale (int): Dim of the image.
+		min_norm_values (list): Minimum values of the normalized stego images.
+		max_norm_values (list): Maximum values of the normalized stego images.
+	"""
+	# Create the model that performs the DWT on a image
+	dwt_net = get_DWT_TF(scale)
+	# Perform the DWT on the stego images in a loop
+	stego_images_low_resolution = []
+	for i in range(len(stego_dict["stego_images"])):
+		# Do the inverse normalization, and then the DWT
+		stego_dict["stego_images"][i] = stego_dict["stego_images"][i].astype(np.float64)
+		stego_dict["stego_images"][i] = (stego_dict["stego_images"][i] * \
+								   (stego_dict["max_values"][i] - stego_dict["min_values"][i])) + stego_dict["min_values"][i]
+		# Apply the DWT
+		stego_dwt = dwt_net(np.reshape(stego_dict["stego_images"][i], (1, scale, scale, 3)))
+		stego_images_low_resolution.append(stego_dwt)
+	
+	# Reshape the stego images to have the proper shape
+	stego_shape = (int(scale / 2), int(scale / 2), 4, 3) 
+
+	return np.array(stego_images_low_resolution).reshape((-1,) + stego_shape)

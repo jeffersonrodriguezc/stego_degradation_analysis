@@ -77,5 +77,6 @@ class Metrics:
         min_dim = min(self.image_a.shape[0], self.image_a.shape[1])
         win_size = min(7, min_dim) if min_dim >= 7 else min_dim
 
-        ssim_value = ssim(self.image_a, self.image_b, win_size=win_size, channel_axis=-1)
+        ssim_value = ssim(self.image_a, self.image_b, win_size=win_size, channel_axis=-1,
+                          data_range=self.image_a.max() - self.image_a.min())
         return ssim_value
