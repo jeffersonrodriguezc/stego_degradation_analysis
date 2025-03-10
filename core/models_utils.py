@@ -11,7 +11,7 @@ def get_IDWT_TF(scale):
     # Define the input tensor
 	tensor = tf.keras.layers.Input(shape = (int(scale/2), 
 													   int(scale/2), 4, 3), 
-													   dtype='float64', batch_size = 1)
+													   dtype='float64',  batch_size = 1)
 
 	# Concatenate each of the approximation and detail images of the DWT, for each color channel
 	channels = []
@@ -51,7 +51,7 @@ def get_DWT_TF(scale):
 	Returns a model that performs the Discrete Wavelet Transform (DWT) of an image."""
 	# Define the input tensor
 	tensor = tf.keras.layers.Input(shape = (int(scale), int(scale), 3), 
-								dtype='float64', batch_size = 1)
+								dtype='float64', batch_size = 1) 
 
 	# Compute the DWT of each of the channels of an RGB image.
 	scope_name = 'DWT'
@@ -96,7 +96,6 @@ def post_process_hide_func_steguz(stego_images, scale):
 	
     # Create the model that performs the IDWT on a image
     idwt_net = get_IDWT_TF(scale)
-	# Perform the IDWT on the stego images in a loop
     min_values = []
     max_values = []
     stego_images_full_resolution = []
@@ -131,11 +130,12 @@ def pre_process_reveal_func_steguz(stego_dict, scale):
 	"""
 	# Create the model that performs the DWT on a image
 	dwt_net = get_DWT_TF(scale)
+
 	# Perform the DWT on the stego images in a loop
 	stego_images_low_resolution = []
 	for i in range(len(stego_dict["stego_images"])):
 		# Do the inverse normalization, and then the DWT
-		stego_dict["stego_images"][i] = stego_dict["stego_images"][i].astype(np.float64)
+		stego_dict["stego_images"][i] = stego_dict["stego_images"][i]/255.
 		stego_dict["stego_images"][i] = (stego_dict["stego_images"][i] * \
 								   (stego_dict["max_values"][i] - stego_dict["min_values"][i])) + stego_dict["min_values"][i]
 		# Apply the DWT
@@ -143,6 +143,6 @@ def pre_process_reveal_func_steguz(stego_dict, scale):
 		stego_images_low_resolution.append(stego_dwt)
 	
 	# Reshape the stego images to have the proper shape
-	stego_shape = (int(scale / 2), int(scale / 2), 4, 3) 
+	stego_shape = (int(scale / 2), int(scale / 2), 4, 3)
 
 	return np.array(stego_images_low_resolution).reshape((-1,) + stego_shape)

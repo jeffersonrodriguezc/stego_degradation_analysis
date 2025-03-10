@@ -24,10 +24,10 @@ class StegoModel:
         model_loaded (str): Specifies which model is currently loaded ('hide' or 'reveal').
     """
     def __init__(self, 
-                 model_path_hide: str,
-                 model_path_reveal: str,
-                 framework: str, 
-                 device: str = 'cpu',
+                 model_path_hide: Optional[str]=None,
+                 model_path_reveal: Optional[str]=None,
+                 framework: str = 'tensorflow', 
+                 device: str = 'gpu',
                  custom_objects: Optional[Dict] = None,
                  objective: str = 'hide',
                  post_process_hide_func: Optional[Callable] = None,

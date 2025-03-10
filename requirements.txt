@@ -1,2 +1,3 @@
 tensorflow-wavelets==1.0.28
 scikit-image==0.25.2
+tqdm==4.67.1
