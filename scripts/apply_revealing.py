@@ -1,17 +1,23 @@
 import os
 import csv
 import sys
+import ast
+import logging
+import warnings
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-import multiprocessing as mp
 
-import warnings
 # Suppress warnings
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 warnings.filterwarnings("ignore")
 
-
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/.."))
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
 
+from core.metrics import Metrics
 from core.models import StegoModel
 from core import models_utils as ml_utils
 from core.utils import load_image, save_image
@@ -22,25 +28,33 @@ BATCH_SIZE = 8
 OUTPUT_DIR = "/app/output/reveal"
 MODEL_NAME = "steguz"  # Configurable for future models
 DATASET_NAME = "CFD" # Configurable for future datasets
-input_type = "stego" # if we are gonna use the stego images or the transformations
-transformation = None
-model_path_reveal = Path(r'/app/models/hide/steguz/')
+SECRET_IMAGE_PATH = "/app/data/secret/base/base_secret.jpg"
+SECRET_IMAGE = load_image(SECRET_IMAGE_PATH)
+input_type = "transformations" # if we are gonna use the stego images or the transformations
+transformation = None #"resize" ...
+summary_name = "transformations_summary.csv" # hiding for stego, transformations for transformations
+SUMMARY_FILE_PATH = f"/app/data/processed/{DATASET_NAME}/{summary_name}"
+model_path_reveal = Path(r'/app/models/reveal/steguz/')
 framework = 'tensorflow'
 objective = 'reveal'
-dim_image = 256
+dim_image = 224
+
+# Initialize preprocessing function for revealing
 pre_process_reveal_func = lambda stegos_dict: ml_utils.pre_process_reveal_func_steguz(stegos_dict,
                                                                                  scale=dim_image)
 custom_objects = {"get_steguz_loss": ml_utils.get_steguz_loss}
 
-def process_batch(image_paths, output_paths, model, progress_bar):
+def process_batch(image_paths, output_paths, model, csv_writer, summary, progress_bar):
     """Processes a batch of images using the revealing model."""
     # Load images 
     images = []
     min_values = []
     max_values = []
     for img_path in image_paths:
-        image, metadata = load_image(img_path, operation="reveal")
-        min_value, max_value = metadata["normalization_values"].split(',')
+        image = load_image(img_path)
+        row = summary[summary['output_image'] == img_path]
+        metadata = ast.literal_eval(row.iloc[0]['metadata'])
+        min_value, max_value = metadata["min_values"], metadata["max_values"]
         min_values.append(min_value)
         max_values.append(max_value)
         images.append(image)
@@ -50,14 +64,17 @@ def process_batch(image_paths, output_paths, model, progress_bar):
                                        "max_values":max_values}, batch_size=8)
     
     # Save recovered images
-    for img, out_path in zip(recovered_secrets, output_paths):
-        save_image(img, out_path)
+    for recovered_secret, in_path, out_path in zip(recovered_secrets['secret_images'], image_paths, output_paths):
+        evaluator_reveal = Metrics(SECRET_IMAGE.copy().astype('float32') / 255.0, recovered_secret)
+        metrics = evaluator_reveal.compute_all()
+        csv_writer.writerow([DATASET_NAME, MODEL_NAME, in_path, out_path, metrics])
+        save_image((recovered_secret*255.).astype(np.uint8), out_path)
     
     # Update progress bar
     progress_bar.update(len(image_paths))
-
+    
 def process_folders(input_folders, input_base, output_base, 
-                    model, csv_writer, DATASET_NAME, MODEL_NAME, progress_bar):
+                    model, csv_writer, hiding_summary, progress_bar):
     """Processes all images within a folder while maintaining the structure."""
     os.makedirs(output_base, exist_ok=True)
     image_paths, output_paths = [], []
@@ -65,9 +82,9 @@ def process_folders(input_folders, input_base, output_base,
     for folder in input_folders:
         input_folder = os.path.join(input_base, folder)
         for root, _, files in os.walk(input_folder):
-            relative_path = os.path.relpath(input_folder, input_base)
+            relative_path = os.path.relpath(root, input_base)
             output_subfolder = os.path.join(output_base, relative_path)
-            #os.makedirs(output_subfolder, exist_ok=True)
+            os.makedirs(output_subfolder, exist_ok=True)
             for file in files:
                 if file.endswith(".png"):  # Only process PNG images
                     input_path = os.path.join(root, file)
@@ -76,17 +93,16 @@ def process_folders(input_folders, input_base, output_base,
                     output_path = os.path.join(output_subfolder, output_file)
                     image_paths.append(input_path)
                     output_paths.append(output_path)
-                    csv_writer.writerow([DATASET_NAME, MODEL_NAME, input_path, output_path])
                 
                     # Process in batches of BATCH_SIZE
                     if len(image_paths) == BATCH_SIZE:
-                        process_batch(image_paths, output_paths, model, progress_bar)
+                        process_batch(image_paths, output_paths, model, csv_writer, hiding_summary, progress_bar)
                         image_paths, output_paths = [], []
     
     # Process remaining images
     if image_paths:
-        pass
-        #process_batch(image_paths, output_paths, model, progress_bar)
+        process_batch(image_paths, output_paths, model, csv_writer, hiding_summary, progress_bar)
+    progress_bar.close()
 
 def main(input_type, transformation=None, debug_mode=False):
     """Executes the revealing process on the `stego` or `transformations` folder with parallelization."""
@@ -94,7 +110,8 @@ def main(input_type, transformation=None, debug_mode=False):
                                                      MODEL_NAME, input_type)
     output_base = os.path.join(OUTPUT_DIR, "{}/{}_{}/{}".format(DATASET_NAME, DATASET_NAME,
                                                                MODEL_NAME, input_type))
-    csv_path = os.path.join(OUTPUT_DIR,"revealing.csv")
+    csv_path = os.path.join(OUTPUT_DIR, DATASET_NAME, "revealing_summary.csv")
+    summary = pd.read_csv(SUMMARY_FILE_PATH)
     
     # Determine input and output folders
     if input_type == "stego":
@@ -110,7 +127,7 @@ def main(input_type, transformation=None, debug_mode=False):
     else:
         raise ValueError("Invalid input type. Must be 'stego' or 'transformations'.")
     
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(output_base, exist_ok=True)
     # Check if the CSV file already exists
     file_exists = os.path.exists(csv_path)
     
@@ -120,53 +137,28 @@ def main(input_type, transformation=None, debug_mode=False):
     # if it is a specific transformation, the folders are the variations
     folders = next(os.walk(input_folder))[1]
     total_folders = len(folders)
-    progress_bar = tqdm(total=total_folders, desc="Processing folders")
+    if transformation:
+        total_images = summary[summary["transformation"]==transformation].shape[0]
+    else:
+        total_images = summary.shape[0]
 
-    # create the chunks of the folders for the parallel processing
-    chunk_size = total_folders // NUM_PROCESSES
-    # if the chunk size is odd, we add 1 to make it even
-    if chunk_size % 2 != 0:
-        chunk_size += 1
-    chunks = [folders[i:i + chunk_size] for i in range(0, total_folders, chunk_size)]
+    progress_bar = tqdm(total=total_images, desc="Processing images")
     
     # Initialize multiple revealing models
-    models = [StegoModel(model_path_reveal=model_path_reveal,
+    model = StegoModel(model_path_reveal=model_path_reveal,
                         framework=framework,
                         custom_objects=custom_objects,
                         objective=objective,
-                        pre_process_reveal_func=pre_process_reveal_func) for _ in range(NUM_PROCESSES)]
-    
-    if debug_mode:
-        print("🔍 Debug Mode Active: Running in Single Process")
-        print("📂 Input Folder:", input_folder)
-        print("📂 Output Folder:", output_folder)
-        print("📄 File exist:", file_exists)
-        print("📄 CSV Path:", csv_path)
-        print("🔢 Total Folders:", total_folders)
-        print("🔢 Chunk Size:", chunk_size)
-        print("🔢 folders (sample):", folders[:10])
-        for chunk in chunks:
-            print("📁 Chunk:", len(chunk))
-        for idx, model in enumerate(models):
-            print(f"🧠 Model {idx} GPU memory usage {model.gpu_memory_usage()}")
+                        pre_process_reveal_func=pre_process_reveal_func)
     
     with open(csv_path, "a" if file_exists else "w", newline="") as csvfile:
         csv_writer = csv.writer(csvfile)
         if not file_exists:
-            csv_writer.writerow(["dataset", "model", "input_image", "output_image"])
+            csv_writer.writerow(["dataset", "model", "input_image", "output_image", "metrics"])
         
-        # Start parallel processing
-        processes = []
-        for i in range(NUM_PROCESSES):
-            process = mp.Process(target=process_folders, 
-                                args=(chunks[i], input_folder, output_folder, 
-                                      models[i], csv_writer, DATASET_NAME, MODEL_NAME, progress_bar))
-            processes.append(process)
-            process.start()
-    
-        for process in processes:
-            process.join()
-    progress_bar.close()
+        process_folders(folders, input_folder, output_folder, 
+                        model, csv_writer, summary, progress_bar)
+
     print("✅ Revealing process completed.")
 
 if __name__ == "__main__":

@@ -102,7 +102,7 @@ def post_process_hide_func_steguz(stego_images, scale):
     for i in range(len(stego_images)):
         idwt_stego = idwt_net.predict(stego_images[i].reshape(1, int(scale/2), 
 																   int(scale/2),
-																	4, 3))
+																	4, 3), verbose=False)
         # Reshape the IDWT output to have the same shape as the original image
         stego_arr = np.reshape(idwt_stego, (scale, scale, 3))
         # Do normalization to be able to save the as a image
@@ -139,7 +139,8 @@ def pre_process_reveal_func_steguz(stego_dict, scale):
 		stego_dict["stego_images"][i] = (stego_dict["stego_images"][i] * \
 								   (stego_dict["max_values"][i] - stego_dict["min_values"][i])) + stego_dict["min_values"][i]
 		# Apply the DWT
-		stego_dwt = dwt_net(np.reshape(stego_dict["stego_images"][i], (1, scale, scale, 3)))
+		stego_dwt = dwt_net.predict(np.reshape(stego_dict["stego_images"][i], (1, scale, scale, 3)),
+					  verbose=False)
 		stego_images_low_resolution.append(stego_dwt)
 	
 	# Reshape the stego images to have the proper shape

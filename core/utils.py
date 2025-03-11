@@ -43,8 +43,7 @@ def save_image(image, output_path):
     :param image: Image to save.
     :param output_path: Path where the image will be saved.
     """
-    cv2.imwrite(output_path, image)
-    print(f"Image saved at: {output_path}")
+    cv2.imwrite(output_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
 
 def save_image_metadata(image, output_path, metadata={}):
     """

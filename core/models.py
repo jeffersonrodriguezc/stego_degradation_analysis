@@ -97,7 +97,7 @@ class StegoModel:
 
         if self.framework == 'tensorflow':
             stegos = self.model.predict([secrets, cover_images], 
-                                        batch_size=batch_size, verbose=True)
+                                        batch_size=batch_size, verbose=False)
         elif self.framework == 'pytorch':
             with torch.no_grad():
                 covers_torch = torch.from_numpy(cover_images).to(self.device)
@@ -139,7 +139,7 @@ class StegoModel:
 
         if self.framework == 'tensorflow':
             secrets = self.model.predict(pre_processed_stegos, batch_size=batch_size, 
-                                         verbose=True)
+                                         verbose=False)
         elif self.framework == 'pytorch':
             with torch.no_grad():
                 stegos_torch = torch.from_numpy(pre_processed_stegos).to(self.device)
