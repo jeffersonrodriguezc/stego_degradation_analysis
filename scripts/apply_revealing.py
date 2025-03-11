@@ -65,7 +65,7 @@ def process_batch(image_paths, output_paths, model, csv_writer, summary, progres
     
     # Save recovered images
     for recovered_secret, in_path, out_path in zip(recovered_secrets['secret_images'], image_paths, output_paths):
-        evaluator_reveal = Metrics(SECRET_IMAGE.copy().astype('float32') / 255.0, recovered_secret)
+        evaluator_reveal = Metrics(SECRET_IMAGE, (recovered_secret*255).astype(np.uint8))
         metrics = evaluator_reveal.compute_all()
         csv_writer.writerow([DATASET_NAME, MODEL_NAME, in_path, out_path, metrics])
         save_image((recovered_secret*255.).astype(np.uint8), out_path)
