@@ -173,9 +173,9 @@ cython_debug/
 # Avoid to upload big data files
 data/raw/
 data/processed/
-data/metadata/
+data/secret/
 models/saved_models/
-output/reveal/
+output/
 
 # Ignore temporal files
 __pycache__/
