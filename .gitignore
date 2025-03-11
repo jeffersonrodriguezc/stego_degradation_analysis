@@ -173,7 +173,7 @@ cython_debug/
 # Avoid to upload big data files
 data/raw/
 data/processed/
-data/secret/
+data/secret/*
 models/saved_models/
 output/
 
