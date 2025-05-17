@@ -24,7 +24,7 @@ from core.utils import load_image, save_image
 BATCH_SIZE = 8
 OUTPUT_DIR = "/app/data/processed"
 MODEL_NAME = "steguz"  # Configurable for future models
-DATASET_NAME = "CFD"  # Configurable for future datasets
+DATASET_NAME = "CFD_one_shot"  # Configurable for future datasets
 INPUT_FOLDER = f"{OUTPUT_DIR}/{DATASET_NAME}/{DATASET_NAME}_original"
 OUTPUT_FOLDER = f"{OUTPUT_DIR}/{DATASET_NAME}/{DATASET_NAME}_{MODEL_NAME}/stego"
 SECRET_IMAGE_PATH = "/app/data/secret/base/base_secret.jpg"

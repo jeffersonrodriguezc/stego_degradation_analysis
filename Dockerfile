@@ -2,10 +2,11 @@ FROM tensorflow/tensorflow:2.15.0-gpu-jupyter
 
 WORKDIR /app
 
-# OPENCV dependencies and tkinter
+# OPENCV, tkinter and others dependencies
 RUN apt update && apt install -y \
     libgl1 libglib2.0-0 \
-    python3-tk && \
+    python3-tk \
+    cmake g++ make libopenblas-dev liblapack-dev libx11-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # install important libraries
@@ -14,6 +15,7 @@ RUN pip install numpy==1.26.4 \
     pandas==2.2 \
     scikit-learn==1.6.1 \
     streamlit==1.42.2 \
+    dlib==19.24.6 \
     tk
 
 # install pytorch 

@@ -27,12 +27,12 @@ NUM_PROCESSES = 2
 BATCH_SIZE = 8
 OUTPUT_DIR = "/app/output/reveal"
 MODEL_NAME = "steguz"  # Configurable for future models
-DATASET_NAME = "CFD" # Configurable for future datasets
+DATASET_NAME = "CFD_one_shot" # Configurable for future datasets
 SECRET_IMAGE_PATH = "/app/data/secret/base/base_secret.jpg"
 SECRET_IMAGE = load_image(SECRET_IMAGE_PATH)
-input_type = "transformations" # if we are gonna use the stego images or the transformations
-transformation = None #"resize" ...
-summary_name = "transformations_summary.csv" # hiding for stego, transformations for transformations
+input_type = "manipulations" # if we are gonna use the stego images or the transformations
+transformation = "morphGEN" #"resize" ...
+summary_name = "manipulations_summary.csv" # hiding for stego, transformations for transformations
 SUMMARY_FILE_PATH = f"/app/data/processed/{DATASET_NAME}/{summary_name}"
 model_path_reveal = Path(r'/app/models/reveal/steguz/')
 framework = 'tensorflow'
@@ -88,8 +88,11 @@ def process_folders(input_folders, input_base, output_base,
             for file in files:
                 if file.endswith(".png"):  # Only process PNG images
                     input_path = os.path.join(root, file)
-                    output_file = file.replace("stego", "recovered") \
-                        if "stego" in file else f"{file.split('.')[0]}_recovered.png"
+
+                    #output_file = file.replace("stego", "recovered") \
+                    #    if "stego" in file else f"{file.split('.')[0]}_recovered.png"
+                    output_file = (file.replace("stego", "recovered") if file.endswith("stego") 
+                                        else f"{file.rsplit('.', 1)[0]}_recovered.png")
                     output_path = os.path.join(output_subfolder, output_file)
                     image_paths.append(input_path)
                     output_paths.append(output_path)
@@ -117,7 +120,7 @@ def main(input_type, transformation=None, debug_mode=False):
     if input_type == "stego":
         input_folder = input_base
         output_folder = output_base
-    elif input_type == "transformations":
+    elif input_type == "transformations" or input_type == "manipulations":
         if transformation:
             input_folder = os.path.join(input_base, transformation)
             output_folder = os.path.join(output_base, transformation)
@@ -137,8 +140,10 @@ def main(input_type, transformation=None, debug_mode=False):
     # if it is a specific transformation, the folders are the variations
     folders = next(os.walk(input_folder))[1]
     total_folders = len(folders)
-    if transformation:
-        total_images = summary[summary["transformation"]==transformation].shape[0]
+    if input_type == "transformations" and transformation:
+        total_images = summary[(summary["transformation"]==transformation) & (summary.model==MODEL_NAME)].shape[0]
+    elif input_type == "manipulations" and transformation:
+        total_images = summary[(summary["model"] == MODEL_NAME) & (summary["model_manipulation"] == transformation)].shape[0]
     else:
         total_images = summary.shape[0]
 

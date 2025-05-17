@@ -86,7 +86,7 @@ def apply_transformations_parallel(root_dir, config_path, csv_output, csv_hiding
                     image_paths.append((image_path, transformations_pipeline, 
                                         output_base_dir, csv_records, metadata))
     
-    num_workers = max(1, int(multiprocessing.cpu_count() * 0.8))
+    num_workers = max(1, int(multiprocessing.cpu_count() * 0.5))
     
     with multiprocessing.Pool(num_workers) as pool:
         pool.map(process_image, image_paths)
@@ -97,7 +97,7 @@ def apply_transformations_parallel(root_dir, config_path, csv_output, csv_hiding
     print(f"CSV saved: {csv_output}")
 
 # Example usage
-DATASET_NAME = 'CFD'
+DATASET_NAME = 'CFD_one_shot'
 MODEL_NAME = 'steguz'
 root_directory = f"/app/data/processed/{DATASET_NAME}/{DATASET_NAME}_{MODEL_NAME}" # Change this path to the directory containing the stego images
 config_file = "/app/configs/transformations.yaml" # don't change this path
